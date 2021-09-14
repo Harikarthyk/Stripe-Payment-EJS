@@ -4,6 +4,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const engines = require("consolidate");
+const { default: axios } = require("axios");
 
 
 app.engine("ejs", engines.ejs);
@@ -14,6 +15,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const stripe = require("stripe")('sk_test_51HPvdfLIsRCbc3VeW9A6sIeURsE47HU1Q5AImDJDiUnfgcKR5X6q1jYbUUwDSFzOC6bMBfuFnvHls8XT3vgsZA3s00Wyq8b5G9');
+
+
+const API_URL = `https://organize-me-age.herokuapp.com`;
 
 app.get('/', (req, res) => {
   res.render('index')
@@ -26,11 +30,11 @@ app.get('/', (req, res) => {
  */
 app.post("/create-checkout-session", async (req, res) => {
   try {
-    // let items = [
+    // let items = [  
     //   { id: 1, quantity: 3, name: "Product 01", price: 20 },
     //   { id: 2, quantity: 1, name: "Product 02", price: 10 },
     // ];
-    // const {data , stripeData} = req.body;
+    const { stripeData, organizeMe } = req.body;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "payment",
@@ -42,29 +46,29 @@ app.post("/create-checkout-session", async (req, res) => {
       //         name: item.name,
       //       },
       //       unit_amount: item.price * 100,
-           
+
       //     },
       //     quantity: item.quantity,
       //   }
       // }),
-      line_items : [
+      // line_items : [
+      //   {
+      //     price_data: { 
+      //       currency: 'inr', 
+      //       product_data: {name : "Organize Me"}, 
+      //       unit_amount: 10 * 100 
+      //     },
+      //     quantity : 1
+      //   } 
+      // ],
+      line_items: [
         {
-          price_data: { 
-            currency: 'inr', 
-            product_data: {name : "Organize Me"}, 
-            unit_amount: 10 * 100 
-          },
-          quantity : 1
+          price_data: stripeData,
+          quantity: 1
         }
       ],
-      // line_items : [
-      //     {
-      //       price_data: stripeData,
-      //       quantity : 1
-      //     }
-      //   ],
-      success_url: `http://localhost:5050/success`,
-      cancel_url: `http://localhost:5050/cancel`,
+      success_url: `${url}success`,
+      cancel_url: `${url}cancel`,
     });
     // Sample Session data https://stripe.com/docs/api/checkout/sessions/create?lang=node
     // {
@@ -103,7 +107,11 @@ app.post("/create-checkout-session", async (req, res) => {
     //   total_details: { amount_discount: 0, amount_shipping: 0, amount_tax: 0 },
     //   url: 'https://checkout.stripe.com/pay/cs_test_b1GCcTaACLH6iR3SkaLKys0KiiNJlvIER2wOQvCPI3HWqjYjUmdEaibeDT#fidkdWxOYHwnPyd1blpxYHZxWjA0TVVzYWNJTHZXRmdmNlNgUF9MSHY1fHRLTFB1SjBfV31jNGo2YTBsQGtrdE1mUWMzQHBRaWNTM1NHZkQ8YTNtVDJNQ2swMlJUV19pfHF2RmZgb3F2XX10NTVhb3w0R3ZsYScpJ2N3amhWYHdzYHcnP3F3cGApJ2lkfGpwcVF8dWAnPydocGlxbFpscWBoJyknYGtkZ2lgVWlkZmBtamlhYHd2Jz9xd3BgeCUl'
     // }
-
+   
+    await axios.post(`${API_URL}/api/order/create/stripe`, {
+      organizeMe: organizeMe,
+      stripeData: session,
+    });
     res.redirect(session.url);
   } catch (error) {
     console.log('------Line 54------', error);
@@ -115,7 +123,7 @@ app.post("/create-checkout-session", async (req, res) => {
 })
 
 app.get('/success', (req, res) => {
-  console.log(req.headers,req.body,'----');
+  console.log(req.headers, req.body, '----');
   return res.render('success');
 })
 
@@ -123,6 +131,8 @@ app.get('/cancel', (req, res) => {
   return res.render('cancel');
 });
 
-let PORT = 5050;
+
+const PORT = process.env.PORT || 5000;
+let url = process.env.NODE_ENV === "production" ? "https://organzime-stripe.herokuapp.com/" : `http://localhost:${PORT}/`
 
 app.listen(PORT, () => console.log(`Server is up and running ${PORT}`))
