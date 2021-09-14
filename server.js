@@ -133,6 +133,6 @@ app.get('/cancel', (req, res) => {
 
 
 const PORT = process.env.PORT || 5000;
-let url = process.env.NODE_ENV === "production" ? "https://organzime-stripe.herokuapp.com/" : `http://localhost:${PORT}/`
+let url = process.env.NODE_ENV === "production" ? "https://organizeme-stripe.herokuapp.com/" : `http://localhost:${PORT}/`
 
 app.listen(PORT, () => console.log(`Server is up and running ${PORT}`))
